@@ -1,0 +1,28 @@
+
+> honryu-app@0.1.0 build
+> next build --webpack
+
+笆ｲ Next.js 16.1.6 (webpack)
+
+  Creating an optimized production build ...
+ 笨・(pwa) Compiling for server...
+ 笨・(pwa) Compiling for server...
+ 笨・(pwa) Compiling for client (static)...
+ 笳・(pwa) Service worker: C:\Users\ts453\OneDrive\繝・せ繧ｯ繝医ャ繝予遘√い繝励Μ\public\sw.js
+ 笳・(pwa)   URL: /sw.js
+ 笳・(pwa)   Scope: /
+笨・Compiled successfully in 2.3s
+  Running TypeScript ...
+Failed to compile.
+
+./next.config.ts:8:3
+Type error: Object literal may only specify known properties, and 'skipWaiting' does not exist in type 'PluginOptions'.
+
+   6 |   disable: process.env.NODE_ENV === "development",
+   7 |   register: true,
+>  8 |   skipWaiting: true,
+     |   ^
+   9 | });
+  10 |
+  11 | const nextConfig: NextConfig = {
+Next.js build worker exited with code: 1 and signal: null

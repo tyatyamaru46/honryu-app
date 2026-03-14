@@ -1,0 +1,18 @@
+
+> honryu-app@0.1.0 build
+> next build
+
+筧ｯ Failed to load next.config.ts, see more info here https://nextjs.org/docs/messages/next-config-error
+
+> Build error occurred
+Error: Cannot find module '@ducanh2912/next-pwa'
+Require stack:
+- C:\Users\ts453\OneDrive\繝・せ繧ｯ繝医ャ繝予遘√い繝励Μ\next.config.compiled.js
+- C:\Users\ts453\OneDrive\繝・せ繧ｯ繝医ャ繝予遘√い繝励Μ\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- C:\Users\ts453\OneDrive\繝・せ繧ｯ繝医ャ繝予遘√い繝励Μ\node_modules\next\dist\server\config.js
+- C:\Users\ts453\OneDrive\繝・せ繧ｯ繝医ャ繝予遘√い繝励Μ\node_modules\next\dist\cli\next-test.js
+- C:\Users\ts453\OneDrive\繝・せ繧ｯ繝医ャ繝予遘√い繝励Μ\node_modules\next\dist\bin\next
+    at ignore-listed frames {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
