@@ -24,8 +24,13 @@ export default function NoisesPage() {
 
   const load = async () => {
     if (!user) return;
-    const ns = await getNoises(user.uid);
-    setNoises(ns.filter((n) => n.status === "active"));
+    try {
+      const ns = await getNoises(user.uid);
+      setNoises(ns.filter((n) => n.status === "active"));
+    } catch (err) {
+      console.error("Failed to load noises:", err);
+      setError("ノイズの読み込みに失敗しました（DevToolsのConsoleも参照してください）");
+    }
   };
 
   const handleAdd = async () => {

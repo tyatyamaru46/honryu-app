@@ -7,6 +7,7 @@ import { MAIN_NAMES } from "@/lib/types";
 import { formatTokyoDate, formatTokyoDateTime, daysAgo } from "@/lib/dateUtils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { syncPublicStatus } from "@/lib/syncPublicStatus";
 
 export default function HomePage() {
   const { user, profile, loading, signIn, refreshProfile } = useAuth();
@@ -71,6 +72,7 @@ export default function HomePage() {
     if (!user) return;
     await updateUserProfile(user.uid, { today_focus_main_id: mainId as any });
     await refreshProfile();
+    syncPublicStatus(user.uid); // 非同期・サイレント
   };
 
   const handleStartReview = async () => {

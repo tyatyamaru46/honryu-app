@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getPendingReviews, completeReview } from "@/lib/firestore";
+import { syncPublicStatus } from "@/lib/syncPublicStatus";
 import type { Review } from "@/lib/types";
 import { formatTokyoDateTime } from "@/lib/dateUtils";
 import Link from "next/link";
@@ -21,8 +22,12 @@ export default function ReviewsPage() {
 
   const load = async () => {
     if (!user) return;
-    const rs = await getPendingReviews(user.uid);
-    setReviews(rs.sort((a, b) => (a.scheduled_date?.toMillis() || 0) - (b.scheduled_date?.toMillis() || 0)));
+    try {
+      const rs = await getPendingReviews(user.uid);
+      setReviews(rs.sort((a, b) => (a.scheduled_date?.toMillis() || 0) - (b.scheduled_date?.toMillis() || 0)));
+    } catch (err) {
+      console.error("Failed to load reviews:", err);
+    }
   };
 
   const handleComplete = async () => {
@@ -31,6 +36,7 @@ export default function ReviewsPage() {
     setSaving(true);
     try {
       await completeReview(user.uid, activeReview.main_id, activeReview.sub_id, activeReview.id, answer);
+      syncPublicStatus(user.uid); // 非同期・サイレント
       setActiveReview(null);
       setAnswer("");
       await load();

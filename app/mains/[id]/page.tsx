@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { getMains, getSubs, updateMain, setSubActive, addSub } from "@/lib/firestore";
+import { syncPublicStatus } from "@/lib/syncPublicStatus";
 import type { Main, Sub } from "@/lib/types";
 import { Timestamp } from "firebase/firestore";
 import Link from "next/link";
@@ -44,6 +45,7 @@ export default function MainDetailPage() {
     setSaving(true);
     try {
       await updateMain(user.uid, id, form as Partial<Main>);
+      syncPublicStatus(user.uid); // 非同期・サイレント
       await load();
       setEditing(false);
     } catch { setError("保存に失敗しました"); }

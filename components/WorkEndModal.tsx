@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { addWorkLog } from "@/lib/firestore";
+import { syncPublicStatus } from "@/lib/syncPublicStatus";
 
 interface Props { onClose: () => void; }
 
@@ -22,6 +23,7 @@ export default function WorkEndModal({ onClose }: Props) {
     setSaving(true);
     try {
       await addWorkLog(user.uid, { did_today: did, next_action: next, saikai_memo: memo });
+      syncPublicStatus(user.uid); // 非同期・サイレント
       await refreshProfile();
       onClose();
     } catch {

@@ -14,7 +14,7 @@ export default function NavBar() {
 
   const links = [
     { href: "/", label: "ホーム" },
-    { href: "/mobile", label: "📱 簡易入力" },
+    { href: "/mobile", label: "📱 スマホ確認" },
     { href: "/noises", label: "ノイズ" },
     { href: "/reviews", label: "再確認" },
     { href: "/weekly-review", label: "週次レビュー" },

@@ -23,6 +23,10 @@ export default function SubDetailPage() {
   const [geminiResult, setGeminiResult] = useState<{ golden_prompt?: string, outcome?: string, tips?: string, user_memo?: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [callingGemini, setCallingGemini] = useState(false);
+  const [error, setError] = useState("");
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", purpose: "", deliverable: "", next_action: "", reason_to_do_now: "", saikai_memo: "" });
 
   useEffect(() => {
     if (!user) return;
@@ -35,6 +39,29 @@ export default function SubDetailPage() {
     const s = subs.find((s) => s.id === sid) ?? null;
     setSub(s);
     setAILogs(logs);
+    if (s) {
+      setEditForm({
+        name: s.name,
+        purpose: s.purpose,
+        deliverable: s.deliverable,
+        next_action: s.next_action,
+        reason_to_do_now: s.reason_to_do_now || "",
+        saikai_memo: s.saikai_memo || ""
+      });
+    }
+  };
+
+  const handleUpdateSub = async () => {
+    if (!user || !sub) return;
+    setSaving(true);
+    try {
+      await updateSub(user.uid, mainId, sid, editForm);
+      setIsEditing(false);
+      await load();
+    } catch {
+      setError("更新に失敗しました");
+    }
+    setSaving(false);
   };
 
   const findSimilar = async (text: string) => {
@@ -116,35 +143,80 @@ export default function SubDetailPage() {
 
   return (
     <div className="fade-in">
-      <div className="flex items-center gap-4 mb-6">
-        <button className="btn btn-ghost btn-sm" onClick={() => router.back()}>← 戻る</button>
-        <h1 className="text-xl font-bold">{sub.name}</h1>
-        {sub.is_active && <span className="badge badge-green">アクティブ</span>}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <button className="btn btn-ghost btn-sm" onClick={() => router.back()}>← 戻る</button>
+          {!isEditing ? (
+            <h1 className="text-xl font-bold">{sub.name}</h1>
+          ) : (
+            <input 
+              className="form-input text-xl font-bold" 
+              value={editForm.name} 
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            />
+          )}
+          {sub.is_active && <span className="badge badge-green">アクティブ</span>}
+        </div>
+        <button 
+          className={`btn btn-sm ${isEditing ? "btn-secondary" : "btn-ghost"}`} 
+          onClick={() => setIsEditing(!isEditing)}
+        >
+          {isEditing ? "キャンセル" : "✏️ 編集"}
+        </button>
       </div>
 
-      <div className="grid-2 mb-6">
-        <div className="card-sm flex-col gap-2">
-          <div className="form-label">目的</div>
-          <div className="text-sm">{sub.purpose || "—"}</div>
+      {isEditing ? (
+        <div className="card-sm flex-col gap-4 mb-8">
+          <div className="form-group">
+            <label className="form-label">目的</label>
+            <textarea className="form-textarea" value={editForm.purpose} onChange={(e) => setEditForm({ ...editForm, purpose: e.target.value })} rows={2} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">成果物</label>
+            <input className="form-input" value={editForm.deliverable} onChange={(e) => setEditForm({ ...editForm, deliverable: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">次の一手</label>
+            <input className="form-input" value={editForm.next_action} onChange={(e) => setEditForm({ ...editForm, next_action: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">今すぐやる理由</label>
+            <textarea className="form-textarea" value={editForm.reason_to_do_now} onChange={(e) => setEditForm({ ...editForm, reason_to_do_now: e.target.value })} rows={2} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">再開メモ</label>
+            <input className="form-input" value={editForm.saikai_memo} onChange={(e) => setEditForm({ ...editForm, saikai_memo: e.target.value })} />
+          </div>
+          {error && <p className="form-error">{error}</p>}
+          <button className="btn btn-primary w-full" onClick={handleUpdateSub} disabled={saving}>
+            {saving ? "保存中..." : "変更を保存する"}
+          </button>
         </div>
-        <div className="card-sm flex-col gap-2">
-          <div className="form-label">成果物</div>
-          <div className="text-sm">{sub.deliverable || "—"}</div>
-        </div>
-        <div className="card-sm flex-col gap-2">
-          <div className="form-label">次の一手</div>
-          <div className="text-sm" style={{ color: "var(--green)" }}>▶ {sub.next_action || "—"}</div>
-        </div>
-        <div className="card-sm flex-col gap-2">
-          <div className="form-label">理解段階</div>
-          <div className="flex items-center gap-2">
-            <div className="level-bars">
-              {[1,2,3,4].map((n) => <div key={n} className={`level-bar ${n <= levelIdx + 1 ? `filled-${n}` : ""}`} />)}
+      ) : (
+        <div className="grid-2 mb-6">
+          <div className="card-sm flex-col gap-2">
+            <div className="form-label">目的</div>
+            <div className="text-sm">{sub.purpose || "—"}</div>
+          </div>
+          <div className="card-sm flex-col gap-2">
+            <div className="form-label">成果物</div>
+            <div className="text-sm">{sub.deliverable || "—"}</div>
+          </div>
+          <div className="card-sm flex-col gap-2">
+            <div className="form-label">次の一手</div>
+            <div className="text-sm" style={{ color: "var(--green)" }}>▶ {sub.next_action || "—"}</div>
+          </div>
+          <div className="card-sm flex-col gap-2">
+            <div className="form-label">理解段階</div>
+            <div className="flex items-center gap-2">
+              <div className="level-bars">
+                {[1,2,3,4].map((n) => <div key={n} className={`level-bar ${n <= levelIdx + 1 ? `filled-${n}` : ""}`} />)}
+              </div>
+              <span className="text-sm">{sub.understanding_level}</span>
             </div>
-            <span className="text-sm">{sub.understanding_level}</span>
           </div>
         </div>
-      </div>
+      )}
 
       {sub.saikai_memo && (
         <div className="saikai-banner mb-6">

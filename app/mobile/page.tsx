@@ -1,178 +1,118 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { getMains, getNoises, getPendingReviews, getSubs, addNoise } from "@/lib/firestore";
-import type { Main, RelatedMain, Review } from "@/lib/types";
-import { RELATED_MAIN_NAMES } from "@/lib/types";
-import { Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
+import type { PublicStatus } from "@/lib/syncPublicStatus";
 
 export default function MobilePage() {
-  const { user, profile, loading, signIn } = useAuth();
-  
-  // Data states
-  const [mains, setMains] = useState<Main[]>([]);
-  const [activeSubsMap, setActiveSubsMap] = useState<Record<string, number>>({});
-  const [relatedNoisesMap, setRelatedNoisesMap] = useState<Record<string, number>>({});
-  const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
-  const [dataLoading, setDataLoading] = useState(true);
-
-  // Noise form states
-  const [form, setForm] = useState({ title: "", related_main: "unclassified" as RelatedMain, reason_not_now: "" });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [status, setStatus] = useState<PublicStatus | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const [ms, ns, pvs] = await Promise.all([
-        getMains(user.uid),
-        getNoises(user.uid),
-        getPendingReviews(user.uid),
-      ]);
-      const order: string[] = ["side_business", "sns_ops", "skill_building"];
-      const sortedMains = ms.sort((a, b) => order.indexOf(a.id!) - order.indexOf(b.id!));
-      setMains(sortedMains);
+    const ref = doc(db, "public_status", "latest");
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.exists()) {
+          setStatus(snap.data() as PublicStatus);
+        }
+        setLoading(false);
+      },
+      (err) => {
+        console.error("public_status read error:", err);
+        setLoading(false);
+      }
+    );
+    return unsub;
+  }, []);
 
-      const subsArr = await Promise.all(sortedMains.map((m) => getSubs(user.uid, m.id!)));
-      const aMap: Record<string, number> = {};
-      const nMap: Record<string, number> = {};
-      sortedMains.forEach((m, i) => {
-        aMap[m.id!] = subsArr[i].filter((s) => s.is_active).length;
-        nMap[m.id!] = ns.filter((n) => n.related_main === m.id && n.status === "active").length;
-      });
-      setActiveSubsMap(aMap);
-      setRelatedNoisesMap(nMap);
-
-      const overdue = pvs.filter((r) => {
-        const d = r.scheduled_date?.toDate();
-        return d && d <= new Date();
-      });
-      setPendingReviewsCount(overdue.length);
-      setDataLoading(false);
-    })();
-  }, [user, saving]); // Reload stats after saving a noise
-
-  if (loading) return <div className="p-4 text-center">読み込み中…</div>;
-  if (!user) {
+  if (loading) {
     return (
-      <div className="p-4 text-center">
-        <p className="mb-4">ログインが必要です</p>
-        <button className="btn btn-primary" onClick={signIn}>Googleでログイン</button>
+      <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
+        読み込み中…
       </div>
     );
   }
 
-  const todayFocus = mains.find((m) => m.id === profile?.today_focus_main_id);
+  if (!status) {
+    return (
+      <div style={{ padding: "2rem", textAlign: "center" }}>
+        <p className="text-muted text-sm">データがまだありません。</p>
+        <p className="text-dim text-xs mt-2">PCで操作するとここに表示されます。</p>
+      </div>
+    );
+  }
 
-  const handleSaveNoise = async () => {
-    if (!form.title.trim()) { setError("タイトルは必須です"); return; }
-    setSaving(true);
-    setError("");
-    setSuccess("");
-    try {
-      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const reason = form.reason_not_now.trim() || "(スマホからクイック入力)";
-      
-      await addNoise(user.uid, {
-        title: form.title,
-        content: "",
-        related_main: form.related_main,
-        reason_not_now: reason,
-        next_review_date: Timestamp.fromDate(nextWeek),
-        promoted_to_sub_id: null,
-        status: "active",
-      });
-      setSuccess("ノイズを追加しました");
-      setForm({ title: "", related_main: "unclassified", reason_not_now: "" });
-      setTimeout(() => setSuccess(""), 3000);
-    } catch {
-      setError("保存に失敗しました");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const updatedAt = status.updated_at?.toDate
+    ? status.updated_at.toDate().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+    : "";
 
   return (
-    <div className="fade-in pb-10" style={{ maxWidth: 480, margin: "0 auto" }}>
-      
-      {/* 1. 今日の本流 */}
-      <div className="card mb-6 mt-4" style={{ borderColor: "var(--accent)", background: "var(--bg-card)" }}>
-        <div className="text-xs text-muted mb-1 font-bold" style={{ color: "var(--accent)" }}>👑 今日の本流</div>
-        <div className="text-lg font-bold">
-          {todayFocus ? todayFocus.name : <span className="text-dim">未設定</span>}
-        </div>
-        {todayFocus?.next_action && (
-           <div className="text-sm mt-1" style={{ color: "var(--green)" }}>▶ {todayFocus.next_action}</div>
-        )}
-      </div>
+    <div className="fade-in pb-10" style={{ maxWidth: 480, margin: "0 auto", padding: "1rem" }}>
 
-      {/* 2. ノイズ最短入力 */}
-      <h2 className="text-sm font-bold mb-2">💡 ノイズ手帳（最短入力）</h2>
-      <div className="card mb-6 flex-col gap-3" style={{ border: "1px solid var(--noise-color)" }}>
-        <input 
-          className="form-input" 
-          placeholder="気になったこと (必須)"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-        />
-        <div className="flex gap-2">
-          <select 
-            className="form-select flex-1" 
-            value={form.related_main} 
-            onChange={(e) => setForm({ ...form, related_main: e.target.value as RelatedMain })}
-          >
-            {(Object.entries(RELATED_MAIN_NAMES) as [RelatedMain, string][]).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-          <input 
-            className="form-input flex-1" 
-            placeholder="今やらない理由 (任意)"
-            value={form.reason_not_now}
-            onChange={(e) => setForm({ ...form, reason_not_now: e.target.value })}
-          />
-        </div>
-        
-        {error && <div className="text-xs text-red-400">{error}</div>}
-        {success && <div className="text-xs text-green-400">{success}</div>}
-        
-        <button 
-          className="btn btn-sm w-full mt-1" 
-          style={{ background: "var(--noise-glow)", color: "var(--noise-color)" }}
-          onClick={handleSaveNoise}
-          disabled={saving}
-        >
-          {saving ? "保存中..." : "書き留めて寝かせる"}
-        </button>
-      </div>
-
-      {/* 3. 3メイン簡易状態表示 */}
-      <div className="flex justify-between items-end mb-2">
-        <h2 className="text-sm font-bold">📊 現在の状況</h2>
-        {pendingReviewsCount > 0 && (
-          <span className="badge badge-red text-xs">再確認 {pendingReviewsCount}件オーバー</span>
-        )}
-      </div>
-
-      {dataLoading ? (
-        <div className="card skeleton h-32"></div>
-      ) : (
-        <div className="flex-col gap-3">
-          {mains.map(m => (
-            <div key={m.id} className="card-sm flex justify-between items-center" style={{ padding: "0.75rem" }}>
-              <div className="font-bold">{m.name}</div>
-              <div className="flex gap-3 text-xs text-muted">
-                 <span>サブ <b style={{ color: "var(--text)" }}>{activeSubsMap[m.id!]}</b></span>
-                 <span>ノイズ <b style={{ color: "var(--text)" }}>{relatedNoisesMap[m.id!]}</b></span>
-              </div>
-            </div>
-          ))}
+      {/* 再開メモ */}
+      {status.saikai_memo && (
+        <div className="saikai-banner mt-2 mb-5">
+          <div className="saikai-banner-label">▶ 再開メモ</div>
+          <div className="saikai-banner-text">{status.saikai_memo}</div>
         </div>
       )}
-      
-      <div className="mt-8 text-center text-xs text-dim">
-        細かな整理や週次レビューは<br/>PC画面で行ってください。
+
+      {/* 今日の本流 */}
+      <div className="card mb-5" style={{ borderColor: "var(--accent)" }}>
+        <div className="text-xs font-bold mb-1" style={{ color: "var(--accent)" }}>👑 今日の本流</div>
+        <div className="text-lg font-bold">
+          {status.today_focus_name ?? <span className="text-dim">未設定</span>}
+        </div>
+        {status.today_focus_next_action && (
+          <div className="text-sm mt-2" style={{ color: "var(--green)" }}>▶ {status.today_focus_next_action}</div>
+        )}
+      </div>
+
+      {/* 再確認アラート */}
+      {status.pending_reviews_count > 0 && (
+        <div className="card-sm mb-5 flex items-center gap-3" style={{ borderColor: "var(--red)" }}>
+          <span className="badge badge-red">{status.pending_reviews_count}</span>
+          <span className="text-sm">再確認が期限切れです。PCで対応してください。</span>
+        </div>
+      )}
+
+      {/* 3メイン状態 */}
+      <div className="text-sm font-bold mb-2" style={{ color: "var(--text-muted)" }}>📊 3メインの状況</div>
+      <div className="flex-col gap-3">
+        {status.mains.map((m) => {
+          const isFocus = m.name === status.today_focus_name;
+          return (
+            <div
+              key={m.id}
+              className="card-sm flex justify-between items-center"
+              style={{ padding: "0.75rem", borderColor: isFocus ? "var(--accent)" : undefined }}
+            >
+              <div>
+                <div className="font-bold text-sm">
+                  {isFocus && <span className="badge badge-accent" style={{ marginRight: 6 }}>本流</span>}
+                  {m.name}
+                </div>
+                {m.next_action && (
+                  <div className="text-xs mt-1" style={{ color: "var(--green)" }}>▶ {m.next_action}</div>
+                )}
+              </div>
+              <div className="flex gap-3 text-xs text-muted">
+                <span>サブ <b style={{ color: "var(--text)" }}>{m.active_subs}</b></span>
+                <span>ノイズ <b style={{ color: "var(--text)" }}>{m.noises}</b></span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {updatedAt && (
+        <div className="mt-6 text-center text-xs text-dim">
+          最終更新: {updatedAt}
+        </div>
+      )}
+      <div className="mt-3 text-center text-xs text-dim">
+        入力・編集・レビューはPCで行ってください。
       </div>
     </div>
   );

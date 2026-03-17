@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── スマホ確認専用の公開データ ──────────────────────────────────────────
+    // 認証なしで誰でも読める。書き込みはログイン済みのPCユーザーのみ許可
+    match /public_status/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // ─── collectionGroup クエリ用 ──────────────────────────────────────────────
+    // getPendingReviews などで特定のサブコレクションを横断検索するための許可
+    match /{path=**}/reviews/{rid} {
+      allow read: if request.auth != null;
+    }
+    match /{path=**}/ai_logs/{lid} {
+      allow read: if request.auth != null;
+    }
+
+    // ─── 個人データ: 本人のみ読み書き ────────────────────────────────────────
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

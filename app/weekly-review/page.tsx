@@ -12,6 +12,7 @@ import {
   promoteNoiseToSub,
   startWeeklyReview,
 } from "@/lib/firestore";
+import { syncPublicStatus } from "@/lib/syncPublicStatus";
 import type { Main, Sub, Noise, WeeklyReview } from "@/lib/types";
 
 export default function WeeklyReviewPage() {
@@ -48,7 +49,10 @@ export default function WeeklyReviewPage() {
       const [ms, ns] = await Promise.all([getMains(user.uid), getNoises(user.uid)]);
       setMains(ms);
       setNoises(ns.filter((n) => n.status === "active"));
-    } catch (e) { console.error(e); }
+    } catch (err) {
+      console.error("Failed to load weekly review data:", err);
+      setError("データの読み込みに失敗しました（DevToolsのConsoleも参照してください）");
+    }
   };
 
   const handleStep1Save = async () => {
@@ -89,6 +93,7 @@ export default function WeeklyReviewPage() {
     setSaving(true);
     try {
       await completeWeeklyReview(user.uid, review.id!, {});
+      syncPublicStatus(user.uid); // 非同期・サイレント
       await refreshProfile();
       router.push("/");
     } catch { setSaving(false); setError("完了処理に失敗しました"); }
