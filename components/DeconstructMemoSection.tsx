@@ -110,8 +110,9 @@ export default function DeconstructMemoSection({ linkedType, linkedId }: Props) 
   };
 
   return (
-    <div className="mt-12">
-      <div className="section-header mb-4">
+    <div className="mt-16">
+      <hr className="section-divider" />
+      <div className="section-header mb-6">
         <div className="section-title">分解メモ（思考の置き場）</div>
         <button className="btn btn-secondary btn-sm" onClick={handleOpenNew}>
           ＋ メモを追加

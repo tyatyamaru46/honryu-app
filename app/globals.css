@@ -189,7 +189,16 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
   margin-bottom: var(--space-4);
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-12);
+  margin-bottom: var(--space-8);
 }
 .section-title {
   font-size: 12px;
@@ -308,6 +317,8 @@ a {
 .mt-4 { margin-top: var(--space-4); }
 .mt-6 { margin-top: var(--space-6); }
 .mt-8 { margin-top: var(--space-8); }
+.mt-12 { margin-top: var(--space-12); }
+.mt-16 { margin-top: var(--space-16); }
 .mb-2 { margin-bottom: var(--space-2); }
 .mb-4 { margin-bottom: var(--space-4); }
 .mb-6 { margin-bottom: var(--space-6); }
