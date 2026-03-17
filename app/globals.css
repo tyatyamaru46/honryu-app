@@ -401,9 +401,10 @@ a {
   backdrop-filter: blur(4px);
   z-index: 200;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: var(--space-4);
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-4);
 }
 .modal {
   background: var(--bg-card);
@@ -412,8 +413,9 @@ a {
   padding: var(--space-8);
   width: 100%;
   max-width: 540px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: none;
+  overflow-y: visible;
+  margin: 0 auto;
 }
 .modal-title {
   font-size: 18px;

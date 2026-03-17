@@ -421,13 +421,22 @@ export async function getLatestWorkLog(uid: string): Promise<WorkLog | null> {
 export const deconstructMemosRef = (uid: string) => collection(db, "users", uid, "deconstruct_memos");
 export const deconstructMemoRef = (uid: string, id: string) => doc(db, "users", uid, "deconstruct_memos", id);
 
-export async function getDeconstructMemos(uid: string, linkedType: MemoLinkedType, linkedId: string | null): Promise<DeconstructMemo[]> {
-  let q = query(deconstructMemosRef(uid), where("linkedType", "==", linkedType), orderBy("updated_at", "desc"));
-  if (linkedId) {
-    q = query(deconstructMemosRef(uid), where("linkedType", "==", linkedType), where("linkedId", "==", linkedId), orderBy("updated_at", "desc"));
-  }
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ ...d.data(), id: d.id } as DeconstructMemo));
+export async function getDeconstructMemos(
+  uid: string,
+  linkedType: MemoLinkedType,
+  linkedId: string | null
+): Promise<DeconstructMemo[]> {
+  const snap = await getDocs(
+    query(deconstructMemosRef(uid), orderBy("updated_at", "desc"))
+  );
+
+  const all = snap.docs.map((d) => ({ ...d.data(), id: d.id } as DeconstructMemo));
+
+  return all.filter((m) => {
+    if (m.linkedType !== linkedType) return false;
+    if (linkedId !== null) return m.linkedId === linkedId;
+    return true;
+  });
 }
 
 export async function addDeconstructMemo(uid: string, data: Omit<DeconstructMemo, "id" | "created_at" | "updated_at">): Promise<string> {
