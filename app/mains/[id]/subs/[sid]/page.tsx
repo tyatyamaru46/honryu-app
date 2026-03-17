@@ -6,6 +6,7 @@ import { getSubs, getAiLogs, getAllAiLogs, updateSub, saveAiLog } from "@/lib/fi
 import type { Sub, AiLog, UnderstandingLevel } from "@/lib/types";
 import { formatTokyoDateTime } from "@/lib/dateUtils";
 import Link from "next/link";
+import DeconstructMemoSection from "@/components/DeconstructMemoSection";
 
 const LEVELS: UnderstandingLevel[] = ["見た", "意味はわかる", "手順を言える", "自力で再現できる"];
 
@@ -376,6 +377,8 @@ export default function SubDetailPage() {
         ))}
         {aiLogs.length === 0 && <div className="empty-state"><div className="empty-state-text">AI相談の記録はありません</div></div>}
       </div>
+
+      <DeconstructMemoSection linkedType="sub" linkedId={sid} />
     </div>
   );
 }

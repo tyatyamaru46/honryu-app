@@ -15,6 +15,7 @@ import {
   Timestamp,
   deleteField,
   increment,
+  deleteDoc,
 } from "firebase/firestore";
 import type {
   Main,
@@ -28,7 +29,9 @@ import type {
   SkillBucket,
   UserProfile,
   QuestionType,
-  WeeklyReview
+  WeeklyReview,
+  DeconstructMemo,
+  MemoLinkedType,
 } from "./types";
 import { tokyoDate, tokyoDayStart } from "./dateUtils";
 // ─── Paths ────────────────────────────────────────────────────────────────────
@@ -412,4 +415,38 @@ export async function getLatestWorkLog(uid: string): Promise<WorkLog | null> {
   if (snap.empty) return null;
   const d = snap.docs[0];
   return { ...d.data(), id: d.id } as WorkLog;
+}
+
+// ─── Deconstruct Memos ────────────────────────────────────────────────────────
+export const deconstructMemosRef = (uid: string) => collection(db, "users", uid, "deconstruct_memos");
+export const deconstructMemoRef = (uid: string, id: string) => doc(db, "users", uid, "deconstruct_memos", id);
+
+export async function getDeconstructMemos(uid: string, linkedType: MemoLinkedType, linkedId: string | null): Promise<DeconstructMemo[]> {
+  let q = query(deconstructMemosRef(uid), where("linkedType", "==", linkedType), orderBy("updated_at", "desc"));
+  if (linkedId) {
+    q = query(deconstructMemosRef(uid), where("linkedType", "==", linkedType), where("linkedId", "==", linkedId), orderBy("updated_at", "desc"));
+  }
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ ...d.data(), id: d.id } as DeconstructMemo));
+}
+
+export async function addDeconstructMemo(uid: string, data: Omit<DeconstructMemo, "id" | "created_at" | "updated_at">): Promise<string> {
+  const now = Timestamp.now();
+  const ref = await addDoc(deconstructMemosRef(uid), {
+    ...data,
+    created_at: now,
+    updated_at: now,
+  });
+  return ref.id;
+}
+
+export async function updateDeconstructMemo(uid: string, id: string, data: Partial<DeconstructMemo>) {
+  await updateDoc(deconstructMemoRef(uid, id), {
+    ...data,
+    updated_at: Timestamp.now(),
+  });
+}
+
+export async function deleteDeconstructMemo(uid: string, id: string) {
+  await deleteDoc(deconstructMemoRef(uid, id));
 }

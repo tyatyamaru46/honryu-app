@@ -126,3 +126,26 @@ export interface UserProfile {
   weekly_review_status: "idle" | "active";
   current_weekly_review_id: string | null;
 }
+
+// ─── Deconstruct Memo ──────────────────────────────────────────────────────────
+export type MemoStatus = "unprocessed" | "adopted" | "hold" | "discarded";
+export type MemoLinkedType = "main" | "sub" | "none";
+
+export const MEMO_STATUS_NAMES: Record<MemoStatus, string> = {
+  unprocessed: "未整理",
+  adopted: "採用済み",
+  hold: "保留",
+  discarded: "不要",
+};
+
+export interface DeconstructMemo {
+  id?: string;
+  title: string;
+  body: string;
+  status: MemoStatus;
+  linkedType: MemoLinkedType;
+  linkedId: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+

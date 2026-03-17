@@ -7,6 +7,7 @@ import { syncPublicStatus } from "@/lib/syncPublicStatus";
 import type { Main, Sub } from "@/lib/types";
 import { Timestamp } from "firebase/firestore";
 import Link from "next/link";
+import DeconstructMemoSection from "@/components/DeconstructMemoSection";
 
 const UNDERSTANDING_LABELS = ["見た", "意味はわかる", "手順を言える", "自力で再現できる"] as const;
 const UNDERSTANDING_LEVEL = [...UNDERSTANDING_LABELS];
@@ -248,6 +249,8 @@ export default function MainDetailPage() {
           </div>
         </>
       )}
+
+      <DeconstructMemoSection linkedType="main" linkedId={id} />
     </div>
   );
 }
